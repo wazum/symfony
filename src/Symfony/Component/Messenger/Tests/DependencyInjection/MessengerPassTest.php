@@ -13,6 +13,7 @@ namespace Symfony\Component\Messenger\Tests\DependencyInjection;
 
 use PHPUnit\Framework\TestCase;
 use Symfony\Bridge\PhpUnit\ExpectDeprecationTrait;
+use Symfony\Component\Console\Command\Command;
 use Symfony\Component\DependencyInjection\ChildDefinition;
 use Symfony\Component\DependencyInjection\Compiler\AttributeAutoconfigurationPass;
 use Symfony\Component\DependencyInjection\Compiler\ResolveChildDefinitionsPass;
@@ -453,7 +454,7 @@ class MessengerPassTest extends TestCase
     {
         $container = $this->getContainerBuilder();
         $container->register('message_bus', MessageBusInterface::class)->addTag('messenger.bus');
-        $container->register(AmqpReceiver::class, AmqpReceiver::class)->addTag('messenger.receiver', ['alias' => 'amqp']);
+        $container->register(AmqpReceiver::class, AmqpReceiver::class)->addTag('messenger.receiver', ['alias' => 'amqp', 'is_consumable' => true]);
 
         (new MessengerPass())->process($container);
 
@@ -464,7 +465,7 @@ class MessengerPassTest extends TestCase
     {
         $container = $this->getContainerBuilder();
         $container->register('message_bus', MessageBusInterface::class)->addTag('messenger.bus');
-        $container->register(AmqpReceiver::class, AmqpReceiver::class)->addTag('messenger.receiver');
+        $container->register(AmqpReceiver::class, AmqpReceiver::class)->addTag('messenger.receiver', ['is_consumable' => true]);
 
         (new MessengerPass())->process($container);
 
@@ -482,8 +483,8 @@ class MessengerPassTest extends TestCase
             null,
         ]);
 
-        $container->register(AmqpReceiver::class, AmqpReceiver::class)->addTag('messenger.receiver', ['alias' => 'amqp']);
-        $container->register(DummyReceiver::class, DummyReceiver::class)->addTag('messenger.receiver', ['alias' => 'dummy']);
+        $container->register(AmqpReceiver::class, AmqpReceiver::class)->addTag('messenger.receiver', ['alias' => 'amqp', 'is_consumable' => true]);
+        $container->register(DummyReceiver::class, DummyReceiver::class)->addTag('messenger.receiver', ['alias' => 'dummy', 'is_consumable' => true]);
 
         (new MessengerPass())->process($container);
 
@@ -498,12 +499,40 @@ class MessengerPassTest extends TestCase
             null,
         ]);
 
-        $container->register(AmqpReceiver::class, AmqpReceiver::class)->addTag('messenger.receiver', ['alias' => 'amqp']);
-        $container->register(DummyReceiver::class, DummyReceiver::class)->addTag('messenger.receiver', ['alias' => 'dummy']);
+        $container->register(AmqpReceiver::class, AmqpReceiver::class)->addTag('messenger.receiver', ['alias' => 'amqp', 'is_consumable' => true]);
+        $container->register(DummyReceiver::class, DummyReceiver::class)->addTag('messenger.receiver', ['alias' => 'dummy', 'is_consumable' => true]);
 
         (new MessengerPass())->process($container);
 
         $this->assertSame(['amqp', 'dummy'], $container->getDefinition('console.command.messenger_setup_transports')->getArgument(1));
+    }
+
+    public function testOnlyConsumableTransportsAreAddedToConsumeCommand()
+    {
+        $container = new ContainerBuilder();
+
+        $container->register('messenger.transport.async', DummyReceiver::class)
+            ->addTag('messenger.receiver', ['alias' => 'async', 'is_consumable' => true]);
+        $container->register('messenger.transport.sync', DummyReceiver::class)
+            ->addTag('messenger.receiver', ['alias' => 'sync', 'is_consumable' => false]);
+        $container->register('messenger.receiver_locator', ServiceLocator::class)
+            ->setArguments([[]]);
+
+        $container->register('console.command.messenger_consume_messages', Command::class)
+            ->setArguments([
+                null,
+                null,
+                null,
+                null,
+                [],
+            ]);
+
+        (new MessengerPass())->process($container);
+
+        $this->assertSame(
+            ['async'],
+            $container->getDefinition('console.command.messenger_consume_messages')->getArgument(4)
+        );
     }
 
     /**

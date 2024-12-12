@@ -2286,6 +2286,7 @@ class FrameworkExtension extends Extension
                 ->addTag('messenger.receiver', [
                     'alias' => $name,
                     'is_failure_transport' => \in_array($name, $failureTransports),
+                    'is_consumable' => !str_starts_with($transport['dsn'], 'sync://'),
                 ])
             ;
             $container->setDefinition($transportId = 'messenger.transport.'.$name, $transportDefinition);

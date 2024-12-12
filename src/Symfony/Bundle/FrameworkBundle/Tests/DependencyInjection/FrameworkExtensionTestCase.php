@@ -884,6 +884,7 @@ abstract class FrameworkExtensionTestCase extends TestCase
         $this->assertEquals([
             'alias' => 'failure_transport_1',
             'is_failure_transport' => true,
+            'is_consumable' => true,
         ], $failureTransport1Tags);
 
         $failureTransport3Definition = $container->getDefinition('messenger.transport.failure_transport_3');
@@ -892,6 +893,7 @@ abstract class FrameworkExtensionTestCase extends TestCase
         $this->assertEquals([
             'alias' => 'failure_transport_3',
             'is_failure_transport' => true,
+            'is_consumable' => true,
         ], $failureTransport3Tags);
 
         // transport 2 exists but does not appear in the mapping
@@ -924,6 +926,7 @@ abstract class FrameworkExtensionTestCase extends TestCase
         $this->assertEquals([
             'alias' => 'failure_transport_1',
             'is_failure_transport' => true,
+            'is_consumable' => true,
         ], $failureTransport1Tags);
 
         $failureTransport3Definition = $container->getDefinition('messenger.transport.failure_transport_3');
@@ -932,6 +935,7 @@ abstract class FrameworkExtensionTestCase extends TestCase
         $this->assertEquals([
             'alias' => 'failure_transport_3',
             'is_failure_transport' => true,
+            'is_consumable' => true,
         ], $failureTransport3Tags);
 
         $failureTransportsByTransportNameServiceLocator = $container->getDefinition('messenger.failure.send_failed_message_to_failure_transport_listener')->getArgument(0);
@@ -959,7 +963,7 @@ abstract class FrameworkExtensionTestCase extends TestCase
         $this->assertTrue($container->hasDefinition('messenger.transport.default'));
         $this->assertTrue($container->getDefinition('messenger.transport.default')->hasTag('messenger.receiver'));
         $this->assertEquals([
-            ['alias' => 'default', 'is_failure_transport' => false], ], $container->getDefinition('messenger.transport.default')->getTag('messenger.receiver'));
+            ['alias' => 'default', 'is_failure_transport' => false, 'is_consumable' => true], ], $container->getDefinition('messenger.transport.default')->getTag('messenger.receiver'));
         $transportArguments = $container->getDefinition('messenger.transport.default')->getArguments();
         $this->assertEquals(new Reference('messenger.default_serializer'), $transportArguments[2]);
 
